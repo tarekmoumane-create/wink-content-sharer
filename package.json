@@ -1,0 +1,24 @@
+{
+  "name": "wink-content-sharer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Discord bot that watches creator accounts listed in one channel and posts their new videos into another channel automatically.",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node tests/parse.mjs && node tests/e2e.mjs && node tests/backoff.mjs && node tests/youtube.mjs",
+    "test:parse": "node tests/parse.mjs",
+    "test:e2e": "node tests/e2e.mjs",
+    "check": "node --check api/cron.js && node --check lib/poll.js && echo ok",
+    "test:backoff": "node tests/backoff.mjs",
+    "test:youtube": "node tests/youtube.mjs"
+  },
+  "dependencies": {
+    "@upstash/redis": "latest"
+  },
+  "devDependencies": {
+    "vercel": "^59.25.4"
+  }
+}
