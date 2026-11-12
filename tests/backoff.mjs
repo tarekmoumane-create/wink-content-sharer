@@ -21,6 +21,8 @@ process.env.KV_REST_API_URL = redis.url;
 process.env.KV_REST_API_TOKEN = "test";
 process.env.DISCORD_API_BASE = discord.url;
 process.env.DISCORD_BOT_TOKEN = "test-token";
+// These suites exercise YouTube too; the bot itself ships with it switched off.
+process.env.WATCH_PLATFORMS = "youtube,tiktok,instagram";
 process.env.DISCORD_SOURCE_CHANNEL_ID = SOURCE;
 process.env.DISCORD_TARGET_CHANNEL_ID = TARGET;
 process.env.SCRAPER_PROVIDER = "scrapecreators";

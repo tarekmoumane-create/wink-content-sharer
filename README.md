@@ -15,6 +15,36 @@ You don't maintain a list anywhere. Whatever links live in your handles channel
 └────────────────────────┘                └──────────────────────────────┘
 ```
 
+## Following SideShift instead of the channel
+
+With a lot of creators coming and going, the handles channel drifts: people who
+left still have links sitting there, and new people forget to post theirs. Set
+`SIDESHIFT_API_KEY` and the bot stops trusting the channel for TikTok and
+Instagram. Every run it asks SideShift who has an **active contract** and
+watches exactly the accounts on those contracts.
+
+- A creator who leaves stops being watched at the next run. A new creator is
+  watched from the next run, whether or not they posted links.
+- YouTube is off. Wink does not do YouTube, so only TikTok and Instagram
+  accounts are watched, whatever links are in the channel. `WATCH_PLATFORMS`
+  (for example `tiktok,instagram,youtube`) is the only way to widen that; with
+  YouTube back on, a YouTube link counts only when the person who posted it also
+  posted a TikTok or Instagram account that SideShift lists as active.
+- An account SideShift marks inactive is skipped. If that leaves a team member
+  with nothing on TikTok or Instagram, the link they posted in the channel for
+  that platform is used instead.
+- Clippers are never watched. This bot shares the UGC creators on the retainer
+  contract; a clipper (the $2 CPM reposting contract, paid on views only through
+  its own terms) is left out. Only `SIDESHIFT_CLIPPERS=include` would let them in.
+- If SideShift can't be reached, or answers with nobody, the last good answer is
+  reused. With no saved answer, the channel is used as before.
+- `/api/health` and every cron response say where the list came from
+  (`rosterSource`).
+
+The key is a read-only SideShift Platform API key (Settings → API & MCP → API
+Keys, read scopes for contracts, creators and campaigns). `SIDESHIFT_PROGRAM_ID`
+limits it to one campaign; left empty, every campaign in the company counts.
+
 ## Why there's no `discord.js` here
 
 A normal Discord bot holds a websocket open forever. Vercel is serverless —

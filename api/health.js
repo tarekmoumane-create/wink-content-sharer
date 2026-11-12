@@ -5,7 +5,7 @@
 //
 //   curl -H "Authorization: Bearer $CRON_SECRET" https://<app>.vercel.app/api/health
 import { getChannel } from "../lib/discord.js";
-import { loadCreators, ignoredSet } from "../lib/creators.js";
+import { loadRoster, ignoredSet } from "../lib/creators.js";
 import { provider } from "../lib/platforms/scraper.js";
 
 export default async function handler(req, res) {
@@ -24,6 +24,7 @@ export default async function handler(req, res) {
       DISCORD_TARGET_CHANNEL_ID: Boolean(process.env.DISCORD_TARGET_CHANNEL_ID),
       redis: Boolean(process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL),
       scraperProvider: provider(),
+      SIDESHIFT_API_KEY: Boolean(process.env.SIDESHIFT_API_KEY),
     },
     ignored: [...ignoredSet()],
     channels: {},
@@ -45,7 +46,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    const creators = await loadCreators(process.env.DISCORD_SOURCE_CHANNEL_ID);
+    const roster = await loadRoster(process.env.DISCORD_SOURCE_CHANNEL_ID);
+    const creators = roster.creators;
+    report.rosterSource = roster.source;
+    if (roster.error) report.rosterError = roster.error;
     report.creatorCount = creators.length;
     report.byPlatform = creators.reduce((acc, c) => {
       acc[c.platform] = (acc[c.platform] || 0) + 1;
