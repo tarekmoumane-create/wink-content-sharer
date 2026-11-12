@@ -33,6 +33,8 @@ const CONTRACTS = [
       { platform: "instagram", handle: "annasfinds", connectionStatus: "active" },
       { platform: "facebook", handle: "6159", connectionStatus: "active" },
       { platform: "instagram", handle: "anna.deadaccount", connectionStatus: "inactive" },
+      { platform: "tiktok", handle: "anna.retired", connectionStatus: "active", scrapeErrorCode: "PROFILE_NOT_FOUND", retiredAt: "2026-11-12T22:07:15Z" },
+      { platform: "instagram", handle: "anna.vanished", connectionStatus: "active", scrapeErrorCode: "PROFILE_DOESNT_EXIST" },
     ],
   }),
   contract("c2", "Nova", [["tiktok", "novathrifts"]]),
@@ -109,6 +111,8 @@ check("the key is sent, both pages are read", sideshift.keys.has("sspk_test_fake
 check("asks only for active contracts in the campaign", sideshift.calls.some((c) => c.startsWith("/contracts?status=active&programId=prog1")));
 check("a team member's channel link fills in a platform SideShift has nothing for", keys(r1).includes("tiktok:ghost.tiktok"));
 check("an account SideShift marks inactive is not watched", !keys(r1).includes("instagram:anna.deadaccount"));
+check("a handle retired through Edit handles (still says active) is not watched", !keys(r1).includes("tiktok:anna.retired"));
+check("a handle SideShift cannot find is not watched", !keys(r1).includes("instagram:anna.vanished"));
 check("no contract was opened one by one when clippers are included", !sideshift.calls.some((c) => /^\/contracts\/\w+/.test(c)));
 check("entries carry what the poller needs", r1.creators.every((c) => c.name && !("authorId" in c)) && r1.creators.find((c) => c.handle === "novathrifts")?.sourceUrl === "https://www.tiktok.com/@novathrifts");
 
