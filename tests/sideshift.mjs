@@ -41,6 +41,7 @@ const CONTRACTS = [
   contract("c3", "Kayla", [["tiktok", "kaylaleft"]], { status: "cancelled" }),
   contract("c4", "Elsewhere", [["tiktok", "othercampaign"]], { programId: "prog2" }),
   contract("c5", "Ghost", [], { platform: "instagram", handle: "ghostpage" }),
+  contract("c7", "Paused Pam", [["tiktok", "pausedpam"], ["instagram", "pausedpam"]]),
 ];
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, "http://x");
@@ -58,6 +59,8 @@ const server = http.createServer((req, res) => {
   const one = url.pathname.match(/^\/contracts\/(\w+)$/);
   if (one) {
     // Nova is a clipper: views-only pay on her own contract.
+    // Pam is paused ("Pause new posts" in SideShift).
+    if (one[1] === "c7") return send(200, { data: { pauseNewPosts: true } });
     return send(200, { data: one[1] === "c2" ? { paymentStructure: { type: "performance", paymentStructureMode: "per-creator" } } : {} });
   }
   if (url.pathname === "/creators") {
@@ -113,7 +116,8 @@ check("a team member's channel link fills in a platform SideShift has nothing fo
 check("an account SideShift marks inactive is not watched", !keys(r1).includes("instagram:anna.deadaccount"));
 check("a handle retired through Edit handles (still says active) is not watched", !keys(r1).includes("tiktok:anna.retired"));
 check("a handle SideShift cannot find is not watched", !keys(r1).includes("instagram:anna.vanished"));
-check("no contract was opened one by one when clippers are included", !sideshift.calls.some((c) => /^\/contracts\/\w+/.test(c)));
+check("a paused contract's accounts are not watched", !keys(r1).some((k) => k.includes("pausedpam")));
+check("each active contract in the campaign was read once, to tell paused and clipper contracts apart", sideshift.calls.filter((c) => /^\/contracts\/\w+/.test(c)).length === 4, `reads=${sideshift.calls.filter((c) => /^\/contracts\/\w+/.test(c)).length}`);
 check("entries carry what the poller needs", r1.creators.every((c) => c.name && !("authorId" in c)) && r1.creators.find((c) => c.handle === "novathrifts")?.sourceUrl === "https://www.tiktok.com/@novathrifts");
 
 console.log("\nSideShift down: the last good answer is reused");
@@ -140,9 +144,10 @@ sideshift.calls.length = 0;
 const r6 = await loadRoster(SOURCE);
 check("clipper's accounts are gone, everyone else stays", same(keys(r6), ["instagram:annasfinds", "instagram:ghostpage", "tiktok:annasfinds", "tiktok:ghost.tiktok"]), keys(r6).join(", "));
 const detailReads = () => sideshift.calls.filter((c) => /^\/contracts\/\w+/.test(c)).length;
-check("each active contract in the campaign was read once", detailReads() === 3, `reads=${detailReads()}`);
+check("what each contract is was remembered from the earlier run, so none was re-read", detailReads() === 0, `reads=${detailReads()}`);
 await loadRoster(SOURCE);
-check("the answer is remembered, so the next run reads none", detailReads() === 3, `reads=${detailReads()}`);
+check("still none re-read on the next run", detailReads() === 0, `reads=${detailReads()}`);
+check("the paused contract stays out", !keys(r6).some((k) => k.includes("pausedpam")));
 process.env.SIDESHIFT_CLIPPERS = "include";
 
 console.log("\nWATCH_PLATFORMS can switch YouTube back on, for team members only");
