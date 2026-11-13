@@ -35,9 +35,10 @@ const CONTRACTS = [
       { platform: "instagram", handle: "anna.deadaccount", connectionStatus: "inactive" },
       { platform: "tiktok", handle: "anna.retired", connectionStatus: "active", scrapeErrorCode: "PROFILE_NOT_FOUND", retiredAt: "2026-11-12T22:07:15Z" },
       { platform: "instagram", handle: "anna.vanished", connectionStatus: "active", scrapeErrorCode: "PROFILE_DOESNT_EXIST" },
+      { platform: "youtube", handle: "anna.oldtube", connectionStatus: "active", scrapeErrorCode: "PROFILE_DOESNT_EXIST", retiredAt: "2026-11-12T22:07:15Z" },
     ],
   }),
-  contract("c2", "Nova", [["tiktok", "novathrifts"]]),
+  contract("c2", "Nova", [["tiktok", "novathrifts"], ["youtube", "@NovaTube"]]),
   contract("c3", "Kayla", [["tiktok", "kaylaleft"]], { status: "cancelled" }),
   contract("c4", "Elsewhere", [["tiktok", "othercampaign"]], { programId: "prog2" }),
   contract("c5", "Ghost", [], { platform: "instagram", handle: "ghostpage" }),
@@ -96,20 +97,23 @@ console.log("\nNo key: the handles channel is the list, exactly as before");
 delete process.env.SIDESHIFT_API_KEY;
 const r0 = await loadRoster(SOURCE);
 check("source is the channel", r0.source === "channel");
-check("every TikTok and Instagram link in the channel is watched, YouTube is not", same(keys(r0), ["instagram:annasfinds", "instagram:ghostpage", "tiktok:anna.old", "tiktok:annasfinds", "tiktok:ghost.tiktok", "tiktok:kaylaleft"]), keys(r0).join(", "));
+check("every TikTok, Instagram and YouTube link in the channel is watched", same(keys(r0), ["instagram:annasfinds", "instagram:ghostpage", "tiktok:anna.old", "tiktok:annasfinds", "tiktok:ghost.tiktok", "tiktok:kaylaleft", "youtube:annashorts", "youtube:kaylatube"]), keys(r0).join(", "));
 check("SideShift was not called", sideshift.calls.length === 0);
 
 console.log("\nWith a key (and clippers explicitly included): SideShift's active contracts decide");
 process.env.SIDESHIFT_API_KEY = "sspk_test_fake";
 process.env.SIDESHIFT_CLIPPERS = "include";
 const r1 = await loadRoster(SOURCE);
-const expected = ["instagram:annasfinds", "instagram:ghostpage", "instagram:nova.ig", "tiktok:annasfinds", "tiktok:ghost.tiktok", "tiktok:novathrifts"];
+const expected = ["instagram:annasfinds", "instagram:ghostpage", "instagram:nova.ig", "tiktok:annasfinds", "tiktok:ghost.tiktok", "tiktok:novathrifts", "youtube:annashorts", "youtube:novatube"];
 check("source is sideshift", r1.source === "sideshift" && !r1.error, r1.error);
 check("active creators' accounts are watched, new creator included", same(keys(r1), expected), keys(r1).join(", "));
 check("creator who left is gone", !keys(r1).some((k) => k.includes("kayla")));
 check("an account that is not on the contract is not watched", !keys(r1).includes("tiktok:anna.old"));
 check("other campaigns and other platforms are ignored", !keys(r1).some((k) => k.includes("othercampaign") || k.includes("6159")));
-check("no YouTube at all, even for someone still on the team", !keys(r1).some((k) => k.startsWith("youtube")));
+check("the YouTube channel on a contract is watched, with a channel link", r1.creators.find((c) => c.handle === "novatube")?.sourceUrl === "https://www.youtube.com/@novatube");
+check("a retired YouTube handle is not watched", !keys(r1).includes("youtube:anna.oldtube"));
+check("a team member's YouTube link from the channel fills in when SideShift has no working one", keys(r1).includes("youtube:annashorts"));
+check("YouTube link of someone who left is not watched", !keys(r1).includes("youtube:kaylatube"));
 check("the key is sent, both pages are read", sideshift.keys.has("sspk_test_fake") && sideshift.calls.some((c) => c.includes("cursor=page2")));
 check("asks only for active contracts in the campaign", sideshift.calls.some((c) => c.startsWith("/contracts?status=active&programId=prog1")));
 check("a team member's channel link fills in a platform SideShift has nothing for", keys(r1).includes("tiktok:ghost.tiktok"));
@@ -142,7 +146,7 @@ console.log("\nOut of the box (no SIDESHIFT_CLIPPERS): clippers' accounts are le
 delete process.env.SIDESHIFT_CLIPPERS;
 sideshift.calls.length = 0;
 const r6 = await loadRoster(SOURCE);
-check("clipper's accounts are gone, everyone else stays", same(keys(r6), ["instagram:annasfinds", "instagram:ghostpage", "tiktok:annasfinds", "tiktok:ghost.tiktok"]), keys(r6).join(", "));
+check("clipper's accounts are gone, everyone else stays", same(keys(r6), ["instagram:annasfinds", "instagram:ghostpage", "tiktok:annasfinds", "tiktok:ghost.tiktok", "youtube:annashorts"]), keys(r6).join(", "));
 const detailReads = () => sideshift.calls.filter((c) => /^\/contracts\/\w+/.test(c)).length;
 check("what each contract is was remembered from the earlier run, so none was re-read", detailReads() === 0, `reads=${detailReads()}`);
 await loadRoster(SOURCE);
@@ -150,11 +154,10 @@ check("still none re-read on the next run", detailReads() === 0, `reads=${detail
 check("the paused contract stays out", !keys(r6).some((k) => k.includes("pausedpam")));
 process.env.SIDESHIFT_CLIPPERS = "include";
 
-console.log("\nWATCH_PLATFORMS can switch YouTube back on, for team members only");
-process.env.WATCH_PLATFORMS = "tiktok,instagram,youtube";
+console.log("\nWATCH_PLATFORMS can switch YouTube off again");
+process.env.WATCH_PLATFORMS = "tiktok,instagram";
 const r7 = await loadRoster(SOURCE);
-check("YouTube link of someone on the team is watched", keys(r7).includes("youtube:annashorts"));
-check("YouTube link of someone who left is not", !keys(r7).includes("youtube:kaylatube"));
+check("no YouTube when narrowed", !keys(r7).some((k) => k.startsWith("youtube")) && keys(r7).includes("tiktok:annasfinds"));
 delete process.env.WATCH_PLATFORMS;
 
 console.log("\nSideShift down and nothing saved yet: fall back to the channel");

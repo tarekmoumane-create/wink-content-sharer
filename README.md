@@ -25,11 +25,11 @@ watches exactly the accounts on those contracts.
 
 - A creator who leaves stops being watched at the next run. A new creator is
   watched from the next run, whether or not they posted links.
-- YouTube is off. Wink does not do YouTube, so only TikTok and Instagram
-  accounts are watched, whatever links are in the channel. `WATCH_PLATFORMS`
-  (for example `tiktok,instagram,youtube`) is the only way to widen that; with
-  YouTube back on, a YouTube link counts only when the person who posted it also
-  posted a TikTok or Instagram account that SideShift lists as active.
+- TikTok, Instagram and YouTube are all watched (YouTube since Nov 13 2026).
+  The YouTube channel comes from the contract, like the other two. A YouTube
+  link in the channel counts only when SideShift has no working YouTube for that
+  person and they are still on the team. `WATCH_PLATFORMS` (for example
+  `tiktok,instagram`) can narrow the list.
 - An account SideShift marks inactive is skipped. If that leaves a team member
   with nothing on TikTok or Instagram, the link they posted in the channel for
   that platform is used instead.
