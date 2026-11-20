@@ -9,7 +9,9 @@ export function startFakeRedis() {
   const sets = new Map();
   const set = (k) => sets.get(k) ?? (sets.set(k, new Set()), sets.get(k));
 
+  let commands = 0;
   const exec = ([cmd, ...args]) => {
+    commands++;
     switch (String(cmd).toLowerCase()) {
       case "get": return strings.has(args[0]) ? strings.get(args[0]) : null;
       case "set": {
@@ -23,6 +25,8 @@ export function startFakeRedis() {
       case "sadd": { const s = set(args[0]); let n = 0;
         for (const v of args.slice(1)) if (!s.has(String(v))) { s.add(String(v)); n++; } return n; }
       case "sismember": return set(args[0]).has(String(args[1])) ? 1 : 0;
+      case "smismember": return args.slice(1).flat().map((v) => (set(args[0]).has(String(v)) ? 1 : 0));
+      case "mget": return args.flat().map((k) => (strings.has(k) ? strings.get(k) : null));
       case "scard": return set(args[0]).size;
       case "smembers": return [...set(args[0])];
       case "del": { let n = 0; for (const k of args) { if (strings.delete(k)) n++; if (sets.delete(k)) n++; } return n; }
@@ -50,6 +54,7 @@ export function startFakeRedis() {
 
   return new Promise((r) => server.listen(0, () =>
     r({ url: `http://127.0.0.1:${server.address().port}`, server,
+        commands: () => commands,
         dump: () => ({ strings: [...strings], sets: [...sets].map(([k,v])=>[k,[...v]]) }) })));
 }
 
